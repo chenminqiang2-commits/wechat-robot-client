@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # 1. 你的微信机器人服务
+  wechat-bot:
+    # 告诉 Docker 使用当前目录下的 Dockerfile 构建镜像
+    build: .
+    container_name: wechat-bot
+    restart: always
+    ports:
+      - "8080:8080"  # 左边是电脑端口，右边是容器端口（请根据 .env 里的配置调整）
+    env_file:
+      - .env         # 读取你配置好的 .env 文件
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - bot-network
+
+  # 2. Redis 服务 (缓存)
+  redis:
+    image: redis:alpine
+    container_name: wechat-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - bot-network
+
+  # 3. MySQL 服务 (数据库)
+  # 如果确定不需要数据库，可以删除这部分
+  mysql:
+    image: mysql:5.7
+    container_name: wechat-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root  # 数据库密码，记得修改
+      MYSQL_DATABASE: wechat_bot # 创建的数据库名
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql # 把数据保存到本地，防止重启丢失
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
